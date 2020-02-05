@@ -1,4 +1,43 @@
-#include "../interface/GenDecayCppWorker.h"
+/*#include "../interface/GenDecayCppWorker.h"
+
+GenDecayCppWorker::GenDecayCppWorker(){
+}
+
+GenDecayCppWorker::~GenDecayCppWorker(){
+}
+
+
+
+void 
+GenDecayCppWorker::setGens(TTreeReaderValue<unsigned> *nGen_,
+               TTreeReaderArray<float> *GenPt_,
+               TTreeReaderArray<float> *GenEta_,
+               TTreeReaderArray<float> *GenPhi_,
+               TTreeReaderArray<float> *GenMass_,
+               TTreeReaderArray<int> *GenPdgId_,
+               TTreeReaderArray<int> *GenMomId_
+  ){
+    nGen=nGen_;        GenPt=GenPt_;         GenEta=GenEta_;    GenPhi=GenPhi_; 
+    GenMass=GenMass_;  GenPdgId=GenPdgId_;   GenMomId=GenMomId_;
+  }
+
+
+void 
+GenDecayCppWorker::setMomId(int momPdg_){
+     momPdg=momPdg_;
+  }
+
+
+void
+GenDecayCppWorker::setDaughterId(int daughterPdg_){
+  daughterPdg.push_back(daughterPdg_);
+}
+
+void 
+GenDecayCppWorker::setInterMomId(int interMomPdg_){
+   interMomPdg.push_back(interMomPdg_);
+}
+
 
 bool
 GenDecayCppWorker::Run(){
@@ -7,7 +46,7 @@ GenDecayCppWorker::Run(){
   BdecayIdx.clear();
   BIdx.clear();
   daughtersProperties.clear();
-
+  
   // find final state parts that come from the mother we want
   unsigned n = (*nGen).Get()[0];
   
@@ -15,6 +54,7 @@ GenDecayCppWorker::Run(){
     bool Match=false;
     bool MatchConj=false;
     int daughterIdx=0;
+   
     
     for (unsigned idaughter=0; idaughter<daughterPdg.size(); ++idaughter){
       if ( (*GenPdgId)[igen] == daughterPdg[idaughter] ){
@@ -23,36 +63,40 @@ GenDecayCppWorker::Run(){
       }
       if ( (*GenPdgId)[igen] == -1*daughterPdg[idaughter] ){
          MatchConj=true;  
-         daughterIdx=idaughter;
+	 daughterIdx=idaughter;
       }      
     }
 
     if ( !Match && !MatchConj ) continue;
-    if ( (*GenMomId)[igen]<0 ) continue;
-
-    unsigned momidx=(*GenMomId)[igen];
-
-    if ( interMomPdg[daughterIdx] ==0 ) {
-
+   
+   
+    auto momidx=(*GenMomId)[igen];
+   
+    if ( momidx<0 || unsigned(momidx)>n) 
+        continue;
+    if ( interMomPdg[daughterIdx] ==0 ) {     
       if ( ((*GenPdgId)[momidx] != momPdg && Match ) &&
 	   ((*GenPdgId)[momidx] != -1*momPdg && MatchConj) ) 
          continue;
       BdecayIdx.push_back(igen); 
       BIdx.push_back(momidx);
-
-    } else{
-
+      
+     } else{
+      if ( fabs((*GenPdgId)[momidx]) != fabs(interMomPdg[daughterIdx]) )
+	continue;
       if ( ((*GenPdgId)[momidx] != interMomPdg[daughterIdx] && Match ) &&
 	   ((*GenPdgId)[momidx] != -1*interMomPdg[daughterIdx] && MatchConj) ) 
            continue;
-      unsigned grandMomidx=(*GenMomId)[momidx];
+      auto grandMomidx=(*GenMomId)[momidx];
+      if ( grandMomidx<0 || unsigned(grandMomidx)>n) 
+        continue;
       if ( fabs( (*GenPdgId)[grandMomidx] ) != momPdg ) continue;
       BdecayIdx.push_back(igen); 
       BIdx.push_back(grandMomidx);
-
-    }
+      
+      }
   }
-
+  
   // clear to be sure
   unique_Count.clear();
 
@@ -67,8 +111,9 @@ GenDecayCppWorker::Run(){
       FoundB=true;
     }
   } 
+  // std::cout<<"d size "<<int(daughterPdg.size())<<" "<<std::count(BIdx.begin(), BIdx.end(), selectB)<<std::endl;
+  
   if (!FoundB) return false;
-
   // save B properties
   momProperties.push_back((*GenPdgId)[selectB]);
   momProperties.push_back((*GenPt)[selectB]);
@@ -87,7 +132,7 @@ GenDecayCppWorker::Run(){
     daughterProperties.push_back((*GenPhi)[idx]);
     daughterProperties.push_back((*GenMass)[idx]);
     daughtersProperties.push_back(daughterProperties);
-  } 
+  }
 
   return true;
-}
+}*/

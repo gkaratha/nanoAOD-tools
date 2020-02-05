@@ -9,10 +9,12 @@ from PhysicsTools.NanoAODTools.postprocessing.framework.eventloop import Module
 
 class compositeRecoMatcher(Module):
 
-    def __init__(self, compositeColl, compositeIdxs, matchedIdxs, outputColl, branches=None):
+    def __init__(self, compositeColl, lepCompositeIdxs, hadronCompositeIdxs, lepMatchedRecoIdxs, hadronMatchedRecoIdxs, outputColl, branches=None):
         self.compositeColl = compositeColl
-        self.compositeIdxs = compositeIdxs
-        self.matchedIdxs = matchedIdxs
+        self.lepCompositeIdxs = lepCompositeIdxs
+        self.hadronCompositeIdxs = hadronCompositeIdxs
+        self.lepMatchedRecoIdxs = lepMatchedRecoIdxs
+        self.hadronMatchedRecoIdxs = hadronMatchedRecoIdxs
         self.branches = branches
         self.outputColl = outputColl
         pass
@@ -35,17 +37,16 @@ class compositeRecoMatcher(Module):
 
     def analyze(self, event):
         """process event, return True (go to next module) or False (fail, go to next event)"""
-        
+               
         compColl = Collection(event,self.compositeColl)
-        matchIdxs = [ getattr(event,idx) for idx in  self.matchedIdxs ]
+        lepMatchIdxs = [ getattr(event,idx) for idx in  self.lepMatchedRecoIdxs ]
+        hdrMatchIdxs = [ getattr(event,idx) for idx in  self.hadronMatchedRecoIdxs ]
 
         recoB=None;
         for obj in compColl:        
-          Nreco=0;
-          for compIdx, matchIdx in zip(self.compositeIdxs, matchIdxs):
-            if getattr(obj,compIdx) == matchIdx:
-               Nreco+=1
-          if Nreco == len(matchIdxs):
+          Blep = [ getattr(obj,br) for br in self.lepCompositeIdxs ]
+          Bhad = [ getattr(obj,br) for br in self.hadronCompositeIdxs ]
+          if set(Blep) == set(lepMatchIdxs) and set(Bhad) == set(hdrMatchIdxs):
             recoB=obj
         
     

@@ -10,7 +10,8 @@ _rootLeafType2rootBranchType = { 'UChar_t':'b', 'Char_t':'B', 'UInt_t':'i', 'Int
 class collectionSkimmer(Module):
 
     def __init__(self,input,output,branches, #mandatory imputs
-                 triggerMuonId=None,  # excludes triggering muon from B
+                 exclTriggerMuonId=None,  # excludes triggering muon from B
+                 selTriggerMuonId=None,  # selects only the triggering muon from B
                  sortOutput=False, # output B will be sorted if True
                  sortkey = lambda x : x.pt, # variable to sort
                  reverse=True, # ascending or desceding order
@@ -27,7 +28,8 @@ class collectionSkimmer(Module):
         self.branches = branches
         self.sortkey = lambda obj : sortkey(obj)
         self.reverse = reverse
-        self.triggerMuonId = triggerMuonId
+        self.exclTriggerMuonId = exclTriggerMuonId
+        self.selTriggerMuonId = selTriggerMuonId
         self.maxObjects = maxObjects
         self.selector = selector
         self.sortOutput = sortOutput
@@ -89,17 +91,32 @@ class collectionSkimmer(Module):
         objects = filter( self.selector, objects)         
 
         # remove trigger bias
-        if not self.triggerMuonId == None:
+        if not self.exclTriggerMuonId == None:
            fltrobj = []
-           trgIds = Collection(event, ( self.triggerMuonId.split("_") )[0] )
-           trg_br = ( self.triggerMuonId.split("_") )[1]
+           trgIds = Collection(event, ( self.exclTriggerMuonId.split("_") )[0] )
+           trg_br = ( self.exclTriggerMuonId.split("_") )[1]
            for trg in trgIds:
              trgIdx = getattr( trg, trg_br )
              for obj in objects:
                if obj.l1Idx !=trgIdx and obj.l2Idx !=trgIdx:
                   fltrobj.append(obj)
            objects=fltrobj
-                
+
+        # sel only trigger muons
+        if not self.selTriggerMuonId == None:
+           fltrobj = []
+           trgIds = Collection(event, ( self.selTriggerMuonId.split("_") )[0] )
+           trg_br = ( self.selTriggerMuonId.split("_") )[1]
+           for trg in trgIds:
+             trgIdx = getattr( trg, trg_br )
+             for obj in objects:
+               if obj.l1Idx ==trgIdx or obj.l2Idx == trgIdx:
+                  fltrobj.append(obj)
+           objects=fltrobj
+         
+        if not self.exclTriggerMuonId == None and not self.selTriggerMuonId == None:
+           print "Warning cannot exclude and select Triggering muon at the same evt... Results probably invalid"
+
         if len(objects)==0: return False
 
         # sort
