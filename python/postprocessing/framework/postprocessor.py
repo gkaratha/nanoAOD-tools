@@ -112,6 +112,9 @@ class PostProcessor :
         t0 = time.clock()
 	totEntriesRead=0
 	for fname in self.inputFiles:
+            #if not os.path.exists(fname):
+            #   print "WARNING ",fname," not exists... is cmg doing bshit again?"
+            #   continue
 	    ffnames = []
 	    if "," in fname:
 	        fnames = fname.split(',')
@@ -125,7 +128,11 @@ class PostProcessor :
 	        inFile = ROOT.TFile.Open(fname)
 
 	    #get input tree
-	    inTree = inFile.Get("Events")
+#            try: #me add this
+            inTree = inFile.Get("Events") #ayto uphrxe ektos if
+      #      except ReferenceError: 
+       #        print "cmg gamietai"
+       #        continue #upt here
 	    if inTree == None: inTree = inFile.Get("Friends")
 	    nEntries = min(inTree.GetEntries() - self.firstEntry, self.maxEntries)
 	    totEntriesRead+=nEntries

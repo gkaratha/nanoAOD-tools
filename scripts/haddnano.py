@@ -61,7 +61,6 @@ for e in fileHandles[0].GetListOfKeys() :
                 if isTree:
 	        	obj.Merge(inputs,"fast" if goFast else "")
 			inputs.Clear()
-	
         if isTree  :
 		obj.Write()	
 	elif obj.IsA().InheritsFrom(ROOT.TH1.Class()) :		

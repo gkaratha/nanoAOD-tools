@@ -14,12 +14,17 @@ from time import sleep
 
 class genRecoMatcher(Module):
 
-    def __init__(self,recoInput,genInput,output,branches=None,skipNotMatched=False):
+    def __init__(self,recoInput,genInput,output,branches=None, addChargeMatching=False,skipNotMatched=False,cuts=True,DRcut=None):
         self.recoinput = recoInput
         self.geninput = genInput
         self.output = output
         self.branches = branches        
+        self.addChargeMatching = addChargeMatching
         self.skipNotMatched=skipNotMatched
+        self.cuts=cuts
+        self.DRcut=DRcut
+        if self.DRcut==None:
+           self.DRcut=1000
         if skipNotMatched:
           print "WARNING! evts with unmatched objects WILL be skipped. Not ideal for acceptance studies"
           sleep(2)
@@ -48,16 +53,22 @@ class genRecoMatcher(Module):
        # read gen
         geta = -99
         gphi = -99
-
+        gcharge = 0
         if hasattr(event,self.geninput+"_eta") and hasattr(event,self.geninput+"_phi") :
           geta = getattr(event,self.geninput+"_eta") 
           gphi = getattr(event,self.geninput+"_phi") 
-
         
+        else:
+          print "WARNING gen not found!"
+          return False
         recocoll = Collection(event,self.recoinput)
-        recoEtaPhi = [ deltaR(obj.eta, obj.phi, geta, gphi) for obj in recocoll  if not isnan(deltaR(obj.eta, obj.phi, geta, gphi))]
-        #if any(isnan(recoEtaPhi)) :
-        #   print recoEtaPhi
+        
+        recoEtaPhi = [ (deltaR(obj.eta, obj.phi, geta, gphi),iobj,obj) if ( not isnan(deltaR(obj.eta, obj.phi, geta, gphi)) and deltaR(obj.eta, obj.phi, geta, gphi)<self.DRcut and (type(self.cuts)==bool or self.cuts(obj)) )  else (1000,-1)    for iobj,obj in enumerate(recocoll)  ]
+        if self.addChargeMatching:
+          if hasattr(event,self.geninput+"_charge"):
+            gcharge=getattr(event,self.geninput+"_charge") 
+            recoEtaPhi = [ (deltaR(obj.eta, obj.phi, geta, gphi),iobj,obj) if (not isnan(deltaR(obj.eta, obj.phi, geta, gphi)) and gcharge==obj.charge  and (type(self.cuts)==bool or self.cuts(obj))  ) else (1000,-1)  for iobj,obj in enumerate(recocoll)   ]
+           
         if len(recoEtaPhi)==0:
           if self.skipNotMatched:
              return False
@@ -67,18 +78,16 @@ class genRecoMatcher(Module):
           self.out.fillBranch("%s_Idx"%(self.output),-1)
 
         else:
-          dr = min(recoEtaPhi)
-          idx = recoEtaPhi.index(dr)
-          if isnan(dr):
-            recoEtaPhi=recoEtaPhi.pop(idx)
-            dr = min(recoEtaPhi)
-            idx = recoEtaPhi.index(dr)
-#          print self.branches
+          recoEtaPhi.sort(key=lambda l: l[0])
+          dr = recoEtaPhi[0][0]
+          idx = recoEtaPhi[0][1]
           for br in self.branches:  
-             out=getattr(recocoll[idx],br)
-#             if self.output=="recoK":
-#               print br,out,dr,idx#,recoEtaPhi[:5]
+             if (idx>0 or idx==0):
+                out=getattr(recoEtaPhi[0][2],br)
+             else:
+                out=-99
              self.out.fillBranch("%s_%s"%(self.output,br),out)
+
           self.out.fillBranch("%s_DR"%(self.output),dr) 
           self.out.fillBranch("%s_Idx"%(self.output),idx)   
 

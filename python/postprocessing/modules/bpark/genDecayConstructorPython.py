@@ -18,7 +18,7 @@ class genDecayConstructorPython(Module):
         #super(genDecayConstructor,self).__init__()
         self.momPdgId= momPdgId
         self.daughtersPdgId = daughtersPdgId
-        self.branches = ["pdgId","pt","eta","phi","mass"]                
+        self.branches = ["pdgId","pt","eta","phi","mass","charge"]                
         self.outputDaughterColls=outputDaughterColls
         self.outputMomColl = outputMomColl
         self.interDecay=intermediateDecay
@@ -80,7 +80,6 @@ class genDecayConstructorPython(Module):
     def analyze(self, event):
       """process event, return True (go to next module) or False (fail, go to next event)"""
         
-
       genparts = Collection(event,"GenPart")
       
       PdgIdDaughters =[]
@@ -159,15 +158,25 @@ class genDecayConstructorPython(Module):
            return False    
 
 
-      for br in self.branches:    
-        self.out.fillBranch("%s_%s"%(self.outputMomColl,br), getattr(realB,br) )
+      for br in self.branches: 
+        if br != "charge":   
+          self.out.fillBranch("%s_%s"%(self.outputMomColl,br), getattr(realB,br) )
+      else: 
+          self.out.fillBranch("%s_%s"%(self.outputMomColl,br),getattr(realB,"pdgId")/abs(getattr(realB,"pdgId"))  )
+        
 
       signFactor = getattr(realB,"pdgId") / self.momPdgId
 
       for part in finalStateParts:
         bridx = self.daughtersPdgId.index(signFactor*getattr(part,"pdgId"))
         for br in self.branches:
-           self.out.fillBranch("%s_%s"%(self.outputDaughterColls[bridx],br),getattr(part,br) )
+           if br != "charge":
+             self.out.fillBranch("%s_%s"%(self.outputDaughterColls[bridx],br),getattr(part,br) )
+           else :
+              if abs(part.pdgId)!=11 and abs(part.pdgId)!=13 and abs(part.pdgId)!=15:
+                 self.out.fillBranch("%s_%s"%(self.outputDaughterColls[bridx],br),-1*part.pdgId/abs(part.pdgId) )
+              else:
+                self.out.fillBranch("%s_%s"%(self.outputDaughterColls[bridx],br),part.pdgId/abs(part.pdgId) )
 
       return True
       
