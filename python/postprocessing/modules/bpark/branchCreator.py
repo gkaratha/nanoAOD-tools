@@ -33,22 +33,12 @@ class branchCreator(Module):
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         self.out = wrappedOutputTree
         for br in self.createdBranches:    
-            self.out.branch("%s_%s"%(self.collection,br), _rootLeafType2rootBranchType['Double_t'], lenVar="n%s"%self.collection)
-
+          self.out.branch("%s_%s"%(self.collection,br), _rootLeafType2rootBranchType['Double_t'], lenVar="n%s"%self.collection)
 
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
 
 
-
-    def filterBranchNames(self,branches,collection):
-        out = []
-        for br in branches:
-            name = br.GetName()
-            if not name.startswith(collection+'_'): continue
-            out.append(name.replace(collection+'_',''))
-            self.branchType[out[-1]] = br.FindLeaf(br.GetName()).GetTypeName()
-        return out
 
 
     def analyze(self, event):
@@ -67,9 +57,7 @@ class branchCreator(Module):
               num=eval(self.operation[ioutvar].format(*var))
             except ZeroDivisionError:
               num=-99.0
-            out.append(num)
-
-          self.out.fillBranch("%s_%s"%(self.collection,self.createdBranches[ioutvar]),out)
-
+            out.append(num)        
+            self.out.fillBranch("%s_%s"%(self.collection,self.createdBranches[ioutvar]),out)
         return True
 

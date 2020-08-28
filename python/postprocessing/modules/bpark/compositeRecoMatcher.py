@@ -36,7 +36,7 @@ class compositeRecoMatcher(Module):
         self.out = wrappedOutputTree
         for br in self.branches:    
           self.out.branch("%s_%s"%(self.outputColl,br),'F')
-
+        self.out.branch("%s_%s"%(self.outputColl,"Idx"),'F')
 
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
@@ -53,11 +53,15 @@ class compositeRecoMatcher(Module):
            realLabel_L=[self.lepLabelsToSort[0], self.lepLabelsToSort[1]]
         
         recoB=None;
+        irecoB=-99;
+        itemp=-1;
         for obj in compColl:        
           Blep = [ getattr(obj,br) for br in self.lepCompositeIdxs ]          
           Bhad = [ getattr(obj,br) for br in self.hadronCompositeIdxs ]
+          itemp+=1
           if set(Blep) == set(lepMatchIdxs) and set(Bhad) == set(hdrMatchIdxs):
             recoB=obj
+            irecoB=itemp
             # actual sorting
             if self.sortTwoLepByIdx and lepMatchIdxs[0] == Blep[1]:
               realLabel_L[0], realLabel_L[1] = realLabel_L[1], realLabel_L[0]
@@ -73,9 +77,8 @@ class compositeRecoMatcher(Module):
         if recoB == None:
           for br in self.branches:
             self.out.fillBranch("%s_%s"%(self.outputColl,br),-99)
-
+          self.out.fillBranch("%s_%s"%(self.outputColl,"Idx"),-99)
         else: 
-         
           for br in self.branches:
             out=getattr(recoB,br)
             #sort stuff
@@ -89,5 +92,5 @@ class compositeRecoMatcher(Module):
               if br in self.lepCompositeIdxs:
                 out=sortlepIdx[self.lepCompositeIdxs.index(br)]
             self.out.fillBranch("%s_%s"%(self.outputColl,outputName),out)
-           
+          self.out.fillBranch("%s_%s"%(self.outputColl,"Idx"),irecoB)
         return True

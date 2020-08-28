@@ -16,11 +16,12 @@ _rootLeafType2rootBranchType = { 'UChar_t':'b', 'Char_t':'B', 'UInt_t':'i', 'Int
 
 class branchCreatorMC(Module):
 
-    def __init__(self,inputBranches,operation,createdBranches):
+    def __init__(self,inputBranches,operation,createdBranches,checkForBCandBranch=None):
         self.inputBranches = inputBranches
         self.operation = operation
         self.createdBranches = createdBranches
         self.branchType = {}
+        self.checkForBCandBranch = checkForBCandBranch
         pass
 
     def beginJob(self):
@@ -56,7 +57,8 @@ class branchCreatorMC(Module):
         
         for ioutvar,outvar in enumerate(self.inputBranches):
           invars = [getattr(event,vr) for vr in outvar]  
-          num=0.0
+          num=-99
+          
           try:
             num=eval(self.operation[ioutvar].format(*invars))
           except ZeroDivisionError:
@@ -68,6 +70,10 @@ class branchCreatorMC(Module):
             num=-99.0
           if -99 in invars: 
              num=-99.0
+          if self.checkForBCandBranch!=None and getattr(event,self.checkForBCandBranch)==-99: 
+             num=-99
+          if num>-99 and getattr(event,"recoB_svprob")==-99:
+             print "here",num,getattr(event,"recoB_svprob"),outvar,invars
           self.out.fillBranch(self.createdBranches[ioutvar],num)
 
         return True

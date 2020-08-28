@@ -59,13 +59,16 @@ class functionWrapper(Module):
         # collection based on which we fetch branches in the other collection
         colls=[]
         for icol in self.collections:
-          colls.append(Collection(event,icol))
+          try:
+            x=Collection(event,icol)
+          except RuntimeError:
+            x=getattr(event,icol)
+          colls.append(x)
         
 #        mod= importlib.import_module("CMGTools.RKAnalysis.tools.nanoAOD.UserFunctions")
         from CMGTools.RKAnalysis.tools.nanoAOD.UserFunctions import *
         outvars = eval(self.functionName)(colls)
         for ioutvar,outvar in enumerate(outvars):
-           #print outvar
            #for mbr in outvar:
            self.out.fillBranch(self.createdBranches[ioutvar],outvar)
 

@@ -10,8 +10,8 @@ _rootLeafType2rootBranchType = { 'UChar_t':'b', 'Char_t':'B', 'UInt_t':'i', 'Int
 class collectionSkimmer(Module):
 
     def __init__(self,input,output,branches, #mandatory imputs
-                 exclTriggerMuonId=None,  # excludes triggering muon from B
-                 selTriggerMuonId=None,  # selects only the triggering muon from B
+                 TriggerMuonId=None,  # excludes triggering muon from B
+                 selectTagMuons=None,  # selects only the triggering muon from B
                  sortOutput=False, # output B will be sorted if True
                  sortkey = lambda x : x.pt, # variable to sort
                  reverse=True, # ascending or desceding order
@@ -28,8 +28,8 @@ class collectionSkimmer(Module):
         self.branches = branches
         self.sortkey = lambda obj : sortkey(obj)
         self.reverse = reverse
-        self.exclTriggerMuonId = exclTriggerMuonId
-        self.selTriggerMuonId = selTriggerMuonId
+        self.TriggerMuonId = TriggerMuonId
+        self.selectTagMuons = selectTagMuons
         self.maxObjects = maxObjects
         self.selector = selector
         self.sortOutput = sortOutput
@@ -89,8 +89,7 @@ class collectionSkimmer(Module):
 
         # apply cuts
         objects = filter( self.selector, objects)         
-
-        # remove trigger bias
+        '''# remove trigger bias
         if not self.exclTriggerMuonId == None:
            fltrobj = []
            trgIds = Collection(event, ( self.exclTriggerMuonId.split("_") )[0] )
@@ -112,13 +111,27 @@ class collectionSkimmer(Module):
              for obj in objects:
                if obj.l1Idx ==trgIdx or obj.l2Idx == trgIdx:
                   fltrobj.append(obj)
-           objects=fltrobj
-         
-        if not self.exclTriggerMuonId == None and not self.selTriggerMuonId == None:
-           print "Warning cannot exclude and select Triggering muon at the same evt... Results probably invalid"
+           objects=fltrobj'''
+        if self.TriggerMuonId != None and self.selectTagMuons!=None: 
+           fltrobj = []
+           trgIds = Collection(event, ( self.TriggerMuonId.split("_") )[0] )
+           trg_br = ( self.TriggerMuonId.split("_") )[1]
+           trg_results = [ itrg for itrg,trg in enumerate(trgIds)  if getattr( trg, trg_br )==1]
+           for iobj,obj in enumerate(objects):
+             if self.selectTagMuons==True:
+               if (obj.l1Idx in trg_results) or (obj.l2Idx in trg_results):
+                  fltrobj.append(obj)
+             elif self.selectTagMuons==False:
+               ntrg=0
+               if obj.l1Idx in trg_results: ntrg+=1;
+               if obj.l2Idx  in trg_results: ntrg+=1;
+               if ntrg < len(trg_results): 
+                  fltrobj.append(obj)
+           objects=fltrobj    
+        if (self.TriggerMuonId == None and self.selectTagMuons!=None) or (self.TriggerMuonId != None and self.selectTagMuons==None):
+           print "problem with tag/probe or triggering ID"
 
         if len(objects)==0: return False
-
         # sort
         if self.sortOutput:
            objects.sort (key = self.sortkey, reverse = self.reverse)
@@ -134,7 +147,6 @@ class collectionSkimmer(Module):
               for obj in objects:
                  out.append(getattr(obj,br))
               self.out.fillBranch("%s_%s"%(self.output,br), out)
-
         else:
            for obj in objects:
              for br in self.branches:
